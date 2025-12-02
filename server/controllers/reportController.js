@@ -5,7 +5,7 @@ const getDashboardStats = async (req, res) => {
         const salesRes = await query('SELECT SUM(total) as total_sales FROM sales');
         const ordersRes = await query('SELECT COUNT(*) as total_orders FROM sales');
         const productsRes = await query('SELECT COUNT(*) as total_products FROM products');
-        const lowStockRes = await query('SELECT COUNT(*) as low_stock FROM products WHERE stock < 10');
+        const lowStockRes = await query('SELECT COUNT(*) as low_stock FROM products WHERE stock <= min_stock');
 
         res.json({
             totalSales: Number(salesRes.rows[0].total_sales) || 0,

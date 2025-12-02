@@ -10,6 +10,7 @@ import Inventory from './pages/Inventory';
 import Categories from './pages/Categories';
 import POS from './pages/POS';
 import Reports from './pages/Reports';
+import Users from './pages/Users';
 // Placeholders for other pages
 
 function App() {
@@ -17,12 +18,13 @@ function App() {
         <AuthProvider>
             <Routes>
                 <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
+                <Route path="/login" element={<Login />} />
                 <Route element={<ProtectedRoute />}>
                     <Route element={<Layout />}>
                         <Route path="/" element={<Dashboard />} />
                         <Route path="/inventory" element={<Inventory />} />
                         <Route path="/categories" element={<Categories />} />
+                        <Route path="/users" element={<Users />} />
                         <Route path="/pos" element={<POS />} />
                         <Route path="/reports" element={<Reports />} />
                     </Route>

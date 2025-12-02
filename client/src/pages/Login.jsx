@@ -67,10 +67,7 @@ export default function Login() {
                     </Button>
 
                     <div className="text-center pt-2">
-                        <span className="text-sm text-text-secondary dark:text-gray-400">¿No tienes cuenta? </span>
-                        <Link to="/register" className="text-sm text-primary hover:text-primary-hover font-medium">
-                            Crear cuenta
-                        </Link>
+                        {/* Registration is now admin-only */}
                     </div>
                 </form>
             </div>

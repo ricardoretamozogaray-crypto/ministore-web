@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import api from '../utils/api';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { DollarSign, TrendingUp, Calendar, User, Search, ChevronDown } from 'lucide-react';
+import { Modal } from '../components/ui/Modal';
+import { DollarSign, TrendingUp, Calendar, User, Search, ChevronDown, Eye } from 'lucide-react';
 
 export default function Reports() {
     const [filters, setFilters] = useState({
@@ -13,6 +14,7 @@ export default function Reports() {
     const [reportData, setReportData] = useState(null);
     const [loading, setLoading] = useState(false);
     const [users, setUsers] = useState([]);
+    const [selectedSale, setSelectedSale] = useState(null);
 
     useEffect(() => {
         const fetchUsers = async () => {
@@ -148,9 +150,9 @@ export default function Reports() {
                                     <tr>
                                         <th className="px-6 py-3 text-xs font-medium text-text-secondary uppercase tracking-wider">Fecha</th>
                                         <th className="px-6 py-3 text-xs font-medium text-text-secondary uppercase tracking-wider">Vendedor</th>
-                                        <th className="px-6 py-3 text-xs font-medium text-text-secondary uppercase tracking-wider">Productos</th>
                                         <th className="px-6 py-3 text-xs font-medium text-text-secondary uppercase tracking-wider text-right">Total</th>
                                         <th className="px-6 py-3 text-xs font-medium text-text-secondary uppercase tracking-wider text-right">Ganancia</th>
+                                        <th className="px-6 py-3 text-xs font-medium text-text-secondary uppercase tracking-wider text-center">Detalles</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-border dark:divide-border-dark">
@@ -169,20 +171,20 @@ export default function Reports() {
                                                 <td className="px-6 py-4 text-sm text-text-main dark:text-gray-100">
                                                     {sale.seller_name}
                                                 </td>
-                                                <td className="px-6 py-4 text-sm text-text-secondary">
-                                                    <div className="flex flex-col gap-1">
-                                                        {sale.items.map((item, idx) => (
-                                                            <span key={idx} className="text-xs">
-                                                                {item.quantity}x {item.product_name}
-                                                            </span>
-                                                        ))}
-                                                    </div>
-                                                </td>
                                                 <td className="px-6 py-4 text-sm font-medium text-text-main text-right dark:text-gray-100">
                                                     ${Number(sale.sale_total).toFixed(2)}
                                                 </td>
                                                 <td className="px-6 py-4 text-sm font-medium text-green-600 text-right dark:text-green-400">
                                                     ${Number(sale.sale_profit).toFixed(2)}
+                                                </td>
+                                                <td className="px-6 py-4 text-sm text-center">
+                                                    <button
+                                                        onClick={() => setSelectedSale(sale)}
+                                                        className="inline-flex items-center justify-center p-2 text-primary hover:bg-primary/10 rounded-full transition-colors"
+                                                        title="Ver Detalles"
+                                                    >
+                                                        <Eye className="w-5 h-5" />
+                                                    </button>
                                                 </td>
                                             </tr>
                                         ))
@@ -191,6 +193,74 @@ export default function Reports() {
                             </table>
                         </div>
                     </Card>
+
+                    {/* Sale Details Modal */}
+                    <Modal
+                        isOpen={!!selectedSale}
+                        onClose={() => setSelectedSale(null)}
+                        title="Detalle de Venta"
+                    >
+                        {selectedSale && (
+                            <div className="space-y-6">
+                                {/* Summary Grid */}
+                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                    <div>
+                                        <p className="text-text-muted">Fecha</p>
+                                        <p className="font-medium text-text-main dark:text-gray-100">
+                                            {new Date(selectedSale.created_at).toLocaleString('es-ES')}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p className="text-text-muted">Vendedor</p>
+                                        <p className="font-medium text-text-main dark:text-gray-100">
+                                            {selectedSale.seller_name}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p className="text-text-muted">Total Venta</p>
+                                        <p className="font-bold text-lg text-primary">
+                                            ${Number(selectedSale.sale_total).toFixed(2)}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p className="text-text-muted">Ganancia</p>
+                                        <p className="font-bold text-lg text-green-600 dark:text-green-400">
+                                            ${Number(selectedSale.sale_profit).toFixed(2)}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Products Table */}
+                                <div>
+                                    <h4 className="font-medium text-text-main mb-3 dark:text-gray-100">Productos</h4>
+                                    <div className="border border-border rounded-lg overflow-hidden dark:border-border-dark">
+                                        <table className="w-full text-sm text-left">
+                                            <thead className="bg-gray-50 border-b border-border dark:bg-gray-800 dark:border-border-dark">
+                                                <tr>
+                                                    <th className="px-4 py-2 font-medium text-text-secondary">Producto</th>
+                                                    <th className="px-4 py-2 font-medium text-text-secondary text-center">Cant.</th>
+                                                    <th className="px-4 py-2 font-medium text-text-secondary text-right">Precio</th>
+                                                    <th className="px-4 py-2 font-medium text-text-secondary text-right">Subtotal</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-border dark:divide-border-dark">
+                                                {selectedSale.items.map((item, idx) => (
+                                                    <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                                                        <td className="px-4 py-2 text-text-main dark:text-gray-100">{item.product_name}</td>
+                                                        <td className="px-4 py-2 text-center text-text-secondary">{item.quantity}</td>
+                                                        <td className="px-4 py-2 text-right text-text-secondary">${Number(item.price).toFixed(2)}</td>
+                                                        <td className="px-4 py-2 text-right font-medium text-text-main dark:text-gray-100">
+                                                            ${Number(item.subtotal).toFixed(2)}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </Modal>
                 </>
             )}
         </div>

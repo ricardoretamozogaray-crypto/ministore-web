@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import api from '../utils/api';
-import { DollarSign, Package, ShoppingBag, TrendingUp, ArrowUpRight } from 'lucide-react';
+import { Modal } from '../components/ui/Modal';
+import { Button } from '../components/ui/Button';
+import { DollarSign, Package, ShoppingBag, TrendingUp, ArrowUpRight, AlertTriangle } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 
 export default function Dashboard() {
@@ -9,14 +11,27 @@ export default function Dashboard() {
         totalOrders: 0,
         lowStock: 0,
     });
+    const [lowStockProducts, setLowStockProducts] = useState([]);
+    const [showLowStockModal, setShowLowStockModal] = useState(false);
 
     useEffect(() => {
         const fetchStats = async () => {
             try {
-                const res = await api.get('/reports/stats');
-                setStats(res.data);
+                const [statsRes, lowStockRes] = await Promise.all([
+                    api.get('/reports/stats'),
+                    api.get('/products/low-stock')
+                ]);
+                setStats(statsRes.data);
+                setLowStockProducts(lowStockRes.data);
+
+                // Show modal only if it hasn't been shown in this session and there are low stock products
+                const hasShownAlert = sessionStorage.getItem('hasShownLowStockAlert');
+                if (!hasShownAlert && lowStockRes.data.length > 0) {
+                    setShowLowStockModal(true);
+                    sessionStorage.setItem('hasShownLowStockAlert', 'true');
+                }
             } catch (error) {
-                console.error('Error fetching stats:', error);
+                console.error('Error fetching data:', error);
             }
         };
 
@@ -76,6 +91,46 @@ export default function Dashboard() {
                     </div>
                 </Card>
             </div>
+
+            <Modal
+                isOpen={showLowStockModal}
+                onClose={() => setShowLowStockModal(false)}
+                title="Alerta de Stock Bajo"
+            >
+                <div className="space-y-4">
+                    <div className="flex items-center gap-2 text-amber-600 bg-amber-50 p-3 rounded-lg dark:bg-amber-900/20 dark:text-amber-400">
+                        <AlertTriangle className="w-5 h-5" />
+                        <p className="text-sm font-medium">Los siguientes productos tienen stock bajo o nulo:</p>
+                    </div>
+
+                    <div className="max-h-[300px] overflow-y-auto border border-border rounded-lg dark:border-border-dark">
+                        <table className="w-full text-sm text-left">
+                            <thead className="bg-gray-50 border-b border-border sticky top-0 dark:bg-gray-800 dark:border-border-dark">
+                                <tr>
+                                    <th className="px-4 py-2 font-medium text-text-secondary">Producto</th>
+                                    <th className="px-4 py-2 font-medium text-text-secondary text-center">Stock</th>
+                                    <th className="px-4 py-2 font-medium text-text-secondary text-center">Mínimo</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-border dark:divide-border-dark">
+                                {lowStockProducts.map(product => (
+                                    <tr key={product.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                                        <td className="px-4 py-2 text-text-main dark:text-gray-100">{product.name}</td>
+                                        <td className="px-4 py-2 text-center font-medium text-red-600 dark:text-red-400">{product.stock}</td>
+                                        <td className="px-4 py-2 text-center text-text-secondary">{product.min_stock}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div className="flex justify-end">
+                        <Button onClick={() => setShowLowStockModal(false)}>
+                            Entendido
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
         </div>
     );
 }

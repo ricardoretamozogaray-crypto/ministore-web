@@ -9,6 +9,7 @@ services:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: admin123
       POSTGRES_DB: store_db
+      TZ: America/Lima
     ports:
       - "5432:5432"
     volumes:
@@ -16,8 +17,40 @@ services:
     networks:
       - store_network
 
+  server:
+    build: ./server
+    container_name: store_server
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - DB_HOST=postgres
+      - DB_USER=admin
+      - DB_PASSWORD=admin123
+      - DB_NAME=store_db
+      - DB_PORT=5432
+      - JWT_SECRET=your_jwt_secret_key_here
+      - TZ=America/Lima
+    depends_on:
+      - postgres
+    networks:
+      - store_network
+
+  client:
+    build: ./client
+    container_name: store_client
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - server
+    networks:
+      - store_network
+
 volumes:
   postgres_data:
+
 
 networks:
   store_network:

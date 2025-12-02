@@ -14,6 +14,11 @@ export default function POS() {
     const [categories, setCategories] = useState([]);
     const [isMobileCartOpen, setIsMobileCartOpen] = useState(false);
 
+    // Price Editing State
+    const [editingItem, setEditingItem] = useState(null);
+    const [editValue, setEditValue] = useState('');
+    const [editMode, setEditMode] = useState('unit'); // 'unit' or 'total'
+
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -58,6 +63,38 @@ export default function POS() {
 
     const removeFromCart = (id) => {
         setCart(prev => prev.filter(item => item.id !== id));
+    };
+
+    const handlePriceEdit = (item, mode) => {
+        setEditingItem(item);
+        setEditMode(mode);
+        setEditValue(item.price.toString());
+    };
+
+    const applyPriceChange = () => {
+        if (!editingItem || !editValue) return;
+
+        const value = parseFloat(editValue);
+
+        if (isNaN(value) || value < 0) {
+            alert('Valor inválido');
+            return;
+        }
+
+        let newUnitPrice = editingItem.price;
+
+        if (editMode === 'unit') {
+            newUnitPrice = value;
+        } else if (editMode === 'total') {
+            newUnitPrice = value / editingItem.quantity;
+        }
+
+        setCart(prev => prev.map(item =>
+            item.id === editingItem.id ? { ...item, price: newUnitPrice } : item
+        ));
+
+        setEditingItem(null);
+        setEditValue('');
     };
 
     const total = cart.reduce((sum, item) => sum + (Number(item.price) * item.quantity), 0);
@@ -213,9 +250,11 @@ export default function POS() {
                         ) : (
                             cart.map(item => (
                                 <div key={item.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors dark:hover:bg-gray-800/50 border border-transparent hover:border-border dark:hover:border-border-dark">
-                                    <div className="flex-1 min-w-0">
+                                    <div className="flex-1 min-w-0 cursor-pointer" onClick={() => handlePriceEdit(item, 'unit')}>
                                         <h4 className="font-medium text-sm text-text-main truncate dark:text-gray-100">{item.name}</h4>
-                                        <p className="text-xs text-text-muted">${Number(item.price).toFixed(2)} x {item.quantity}</p>
+                                        <p className="text-xs text-text-muted hover:text-primary transition-colors">
+                                            ${Number(item.price).toFixed(2)} x {item.quantity}
+                                        </p>
                                     </div>
                                     <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5 dark:bg-gray-800">
                                         <button
@@ -232,8 +271,10 @@ export default function POS() {
                                             <Plus className="w-3 h-3" />
                                         </button>
                                     </div>
-                                    <div className="font-medium text-text-main text-sm w-16 text-right dark:text-gray-100">
-                                        ${(item.price * item.quantity).toFixed(2)}
+                                    <div className="flex-1 min-w-0 cursor-pointer" onClick={() => handlePriceEdit(item, 'total')}>
+                                        <div className="font-medium text-text-main text-sm w-16 text-right dark:text-gray-100">
+                                            ${(item.price * item.quantity).toFixed(2)}
+                                        </div>
                                     </div>
                                     <button
                                         onClick={() => removeFromCart(item.id)}
@@ -271,6 +312,84 @@ export default function POS() {
                     </div>
                 </Card>
             </>
+
+            {/* Price Edit Modal */}
+            {editingItem && (
+                <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center backdrop-blur-sm p-4">
+                    <Card className="w-full max-w-md bg-surface p-6 rounded-xl shadow-2xl dark:bg-surface-dark dark:border-border-dark">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-lg font-bold text-text-main dark:text-gray-100">Modificar Precio</h3>
+                            <button onClick={() => setEditingItem(null)} className="text-text-muted hover:text-text-main">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <div className="mb-4">
+                            <p className="text-sm text-text-muted mb-2">Producto: <span className="font-medium text-text-main dark:text-gray-100">{editingItem.name}</span></p>
+                            <p className="text-sm text-text-muted">Precio Actual: ${Number(editingItem.price).toFixed(2)}</p>
+                            <p className="text-sm text-text-muted">Cantidad: {editingItem.quantity}</p>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div className="flex bg-gray-100 p-1 rounded-lg dark:bg-gray-800">
+                                <button
+                                    className={clsx(
+                                        "flex-1 py-1.5 text-sm font-medium rounded-md transition-all",
+                                        editMode === 'unit'
+                                            ? "bg-white text-primary shadow-sm dark:bg-gray-700 dark:text-white"
+                                            : "text-text-muted hover:text-text-main"
+                                    )}
+                                    onClick={() => {
+                                        setEditMode('unit');
+                                        setEditValue(editingItem.price.toString());
+                                    }}
+                                >
+                                    Precio Unitario
+                                </button>
+                                <button
+                                    className={clsx(
+                                        "flex-1 py-1.5 text-sm font-medium rounded-md transition-all",
+                                        editMode === 'total'
+                                            ? "bg-white text-primary shadow-sm dark:bg-gray-700 dark:text-white"
+                                            : "text-text-muted hover:text-text-main"
+                                    )}
+                                    onClick={() => {
+                                        setEditMode('total');
+                                        setEditValue((editingItem.price * editingItem.quantity).toFixed(2));
+                                    }}
+                                >
+                                    Total
+                                </button>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-text-main mb-1 dark:text-gray-200">
+                                    {editMode === 'unit' ? 'Nuevo Precio Unitario' : 'Nuevo Total'}
+                                </label>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    placeholder="0.00"
+                                    className="w-full px-3 py-2 bg-white border border-border rounded-md text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary dark:bg-gray-800 dark:border-border-dark dark:text-gray-100"
+                                    value={editValue}
+                                    onChange={(e) => setEditValue(e.target.value)}
+                                    autoFocus
+                                    onKeyDown={(e) => e.key === 'Enter' && applyPriceChange()}
+                                />
+                            </div>
+
+                            <div className="flex gap-3 justify-end">
+                                <Button variant="secondary" onClick={() => setEditingItem(null)}>
+                                    Cancelar
+                                </Button>
+                                <Button onClick={applyPriceChange}>
+                                    Aplicar
+                                </Button>
+                            </div>
+                        </div>
+                    </Card>
+                </div>
+            )}
         </div>
     );
 }

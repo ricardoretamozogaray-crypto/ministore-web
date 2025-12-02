@@ -5,6 +5,6 @@ const { verifyToken, isAdmin } = require('../middleware/authMiddleware');
 
 router.post('/login', login);
 // Public registration for now (was protected)
-router.post('/register', register);
+router.post('/register', verifyToken, isAdmin, register);
 
 module.exports = router;

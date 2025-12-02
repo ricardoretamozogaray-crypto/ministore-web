@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LayoutDashboard, ShoppingCart, Package, FileBarChart, LogOut, Store, Moon, Sun, Layers, Menu, X } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, Package, FileBarChart, LogOut, Store, Moon, Sun, Layers, Menu, X, Users as UsersIcon } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import clsx from 'clsx';
 
@@ -34,6 +34,7 @@ export default function Layout() {
         { icon: ShoppingCart, label: 'Punto de Venta', path: '/pos' },
         { icon: Package, label: 'Inventario', path: '/inventory' },
         { icon: Layers, label: 'Categorías', path: '/categories', role: 'admin' },
+        { icon: UsersIcon, label: 'Usuarios', path: '/users', role: 'admin' },
         { icon: FileBarChart, label: 'Reportes', path: '/reports', role: 'admin' },
     ];
 

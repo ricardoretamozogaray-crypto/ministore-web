@@ -14,8 +14,9 @@ export default function Inventory() {
     const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
     const [editingProduct, setEditingProduct] = useState(null);
     const [formData, setFormData] = useState({
-        name: '', description: '', price: '', cost: '', stock: '', category_id: '', image_url: ''
+        name: '', description: '', price: '', cost: '', stock: '', min_stock: '', category_id: '', image_url: ''
     });
+    const [showLowStock, setShowLowStock] = useState(false);
     const [bulkData, setBulkData] = useState('');
 
     const quickStockOptions = [
@@ -56,7 +57,8 @@ export default function Inventory() {
             }
             setIsModalOpen(false);
             setEditingProduct(null);
-            setFormData({ name: '', description: '', price: '', cost: '', stock: '', category_id: '', image_url: '' });
+            setEditingProduct(null);
+            setFormData({ name: '', description: '', price: '', cost: '', stock: '', min_stock: '', category_id: '', image_url: '' });
             fetchData();
         } catch (error) {
             alert('Error: ' + error.response?.data?.message);
@@ -68,9 +70,9 @@ export default function Inventory() {
         try {
             const lines = bulkData.trim().split('\n');
             const productsToCreate = lines.map(line => {
-                // Format: name,price,cost,stock,category_id
-                const [name, price, cost, stock, category_id] = line.split(',');
-                return { name, price, cost, stock, category_id };
+                // Format: name,price,cost,stock,min_stock,category_id
+                const [name, price, cost, stock, min_stock, category_id] = line.split(',');
+                return { name, price, cost, stock, min_stock: min_stock || 0, category_id };
             });
 
             for (const p of productsToCreate) {
@@ -82,7 +84,7 @@ export default function Inventory() {
             setBulkData('');
             fetchData();
         } catch (error) {
-            alert('Error en carga masiva. Asegúrate del formato: nombre,precio,costo,stock,id_categoria');
+            alert('Error en carga masiva. Asegúrate del formato: nombre,precio,costo,stock,stock_minimo,id_categoria');
         }
     };
 
@@ -106,12 +108,14 @@ export default function Inventory() {
                 price: product.price,
                 cost: product.cost || '',
                 stock: product.stock,
+                min_stock: product.min_stock || 0,
                 category_id: product.category_id || '',
                 image_url: product.image_url || ''
             });
         } else {
             setEditingProduct(null);
-            setFormData({ name: '', description: '', price: '', cost: '', stock: '', category_id: '', image_url: '' });
+            setEditingProduct(null);
+            setFormData({ name: '', description: '', price: '', cost: '', stock: '', min_stock: '', category_id: '', image_url: '' });
         }
         setIsModalOpen(true);
     };
@@ -123,10 +127,12 @@ export default function Inventory() {
         }
     };
 
-    const filteredProducts = products.filter(p =>
-        p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (p.code && p.code.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
+    const filteredProducts = products.filter(p => {
+        const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (p.code && p.code.toLowerCase().includes(searchTerm.toLowerCase()));
+        const matchesLowStock = showLowStock ? p.stock <= (p.min_stock || 0) : true;
+        return matchesSearch && matchesLowStock;
+    });
 
     if (loading) return <div className="p-8 text-center text-text-muted">Cargando inventario...</div>;
 
@@ -144,6 +150,13 @@ export default function Inventory() {
                     />
                 </div>
                 <div className="flex gap-2 w-full sm:w-auto">
+                    <Button
+                        variant={showLowStock ? "primary" : "secondary"}
+                        onClick={() => setShowLowStock(!showLowStock)}
+                        className="flex-1 sm:flex-none justify-center"
+                    >
+                        {showLowStock ? "Ver Todos" : "Ver Bajo Stock"}
+                    </Button>
                     <Button variant="secondary" onClick={() => setIsBulkModalOpen(true)} className="flex-1 sm:flex-none justify-center">
                         <Upload className="w-4 h-4" /> <span className="sm:hidden lg:inline">Carga</span> Masiva
                     </Button>
@@ -178,7 +191,7 @@ export default function Inventory() {
                                     <td className="px-6 py-4 text-sm font-medium text-text-main dark:text-gray-100">${Number(product.price).toFixed(2)}</td>
                                     <td className="px-6 py-4 text-sm text-text-secondary">${Number(product.cost || 0).toFixed(2)}</td>
                                     <td className="px-6 py-4">
-                                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${product.stock < 10
+                                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${product.stock <= (product.min_stock || 0)
                                             ? 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400'
                                             : 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400'
                                             }`}>
@@ -231,7 +244,7 @@ export default function Inventory() {
                             </div>
                             <div className="flex flex-col items-end">
                                 <span className="text-xs text-text-muted">Stock</span>
-                                <span className={`text-sm font-medium ${product.stock < 10 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'
+                                <span className={`text-sm font-medium ${product.stock <= (product.min_stock || 0) ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'
                                     }`}>
                                     {product.stock} un.
                                 </span>
@@ -290,25 +303,26 @@ export default function Inventory() {
                             onChange={(e) => setFormData({ ...formData, cost: e.target.value })}
                             className="py-3 lg:py-2"
                         />
-                        <div>
-                            <label className="block text-xs font-medium text-text-secondary mb-1.5 uppercase tracking-wide dark:text-gray-400">Stock</label>
-                            <div className="flex flex-col sm:flex-row gap-2">
-                                <select
-                                    className="w-full sm:w-1/2 px-3 py-3 lg:py-2 bg-white border border-border rounded-md text-sm text-text-main transition-colors focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary dark:bg-surface-dark dark:border-border-dark dark:text-gray-100"
-                                    onChange={handleQuickStockChange}
-                                    defaultValue="manual"
-                                >
-                                    {quickStockOptions.map(opt => (
-                                        <option key={opt.label} value={opt.value}>{opt.label}</option>
-                                    ))}
-                                </select>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-medium text-text-secondary mb-1.5 uppercase tracking-wide dark:text-gray-400">Stock</label>
                                 <input
                                     type="number"
-                                    className="w-full sm:w-1/2 px-3 py-3 lg:py-2 bg-white border border-border rounded-md text-sm text-text-main transition-colors focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary dark:bg-surface-dark dark:border-border-dark dark:text-gray-100"
+                                    className="w-full px-3 py-3 lg:py-2 bg-white border border-border rounded-md text-sm text-text-main transition-colors focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary dark:bg-surface-dark dark:border-border-dark dark:text-gray-100"
                                     value={formData.stock}
                                     onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-                                    placeholder="Cantidad"
+                                    placeholder="Cant."
                                     required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-text-secondary mb-1.5 uppercase tracking-wide dark:text-gray-400">Min. Stock</label>
+                                <input
+                                    type="number"
+                                    className="w-full px-3 py-3 lg:py-2 bg-white border border-border rounded-md text-sm text-text-main transition-colors focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary dark:bg-surface-dark dark:border-border-dark dark:text-gray-100"
+                                    value={formData.min_stock}
+                                    onChange={(e) => setFormData({ ...formData, min_stock: e.target.value })}
+                                    placeholder="Min."
                                 />
                             </div>
                         </div>
@@ -359,7 +373,7 @@ export default function Inventory() {
                         rows="10"
                         value={bulkData}
                         onChange={(e) => setBulkData(e.target.value)}
-                        placeholder="Coca Cola,2.50,1.50,100,1&#10;Pepsi,2.40,1.40,50,1"
+                        placeholder="Coca Cola,2.50,1.50,100,10,1&#10;Pepsi,2.40,1.40,50,5,1"
                         required
                     />
                     <div className="pt-4 flex gap-3 justify-end">

@@ -45,7 +45,7 @@ const generateProductCode = async () => {
 };
 
 const createProduct = async (req, res) => {
-    const { name, description, price, cost, stock, category_id, image_url } = req.body;
+    const { name, description, price, cost, stock, min_stock, category_id, image_url } = req.body;
 
     try {
         // Check if name exists
@@ -57,9 +57,9 @@ const createProduct = async (req, res) => {
         const code = await generateProductCode();
 
         const result = await query(
-            `INSERT INTO products (code, name, description, price, cost, stock, category_id, image_url) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-            [code, name, description, price, cost || 0, stock, category_id, image_url]
+            `INSERT INTO products (code, name, description, price, cost, stock, min_stock, category_id, image_url) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+            [code, name, description, price, cost || 0, stock, min_stock || 0, category_id, image_url]
         );
         res.status(201).json(result.rows[0]);
     } catch (err) {
@@ -69,7 +69,7 @@ const createProduct = async (req, res) => {
 
 const updateProduct = async (req, res) => {
     const { id } = req.params;
-    const { name, description, price, cost, stock, category_id, image_url } = req.body;
+    const { name, description, price, cost, stock, min_stock, category_id, image_url } = req.body;
 
     try {
         // Check if name exists for other products
@@ -81,9 +81,9 @@ const updateProduct = async (req, res) => {
         // Code is NOT updated
         const result = await query(
             `UPDATE products 
-       SET name = $1, description = $2, price = $3, cost = $4, stock = $5, category_id = $6, image_url = $7 
-       WHERE id = $8 RETURNING *`,
-            [name, description, price, cost || 0, stock, category_id, image_url, id]
+       SET name = $1, description = $2, price = $3, cost = $4, stock = $5, min_stock = $6, category_id = $7, image_url = $8 
+       WHERE id = $9 RETURNING *`,
+            [name, description, price, cost || 0, stock, min_stock || 0, category_id, image_url, id]
         );
 
         if (result.rows.length === 0) return res.status(404).json({ message: 'Product not found' });
@@ -104,4 +104,13 @@ const deleteProduct = async (req, res) => {
     }
 };
 
-module.exports = { getAllProducts, getProductByCode, createProduct, updateProduct, deleteProduct };
+const getLowStockProducts = async (req, res) => {
+    try {
+        const result = await query('SELECT * FROM products WHERE stock <= min_stock ORDER BY stock ASC');
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+module.exports = { getAllProducts, getProductByCode, createProduct, updateProduct, deleteProduct, getLowStockProducts };
