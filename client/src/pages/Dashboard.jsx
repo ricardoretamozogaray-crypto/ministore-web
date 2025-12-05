@@ -70,7 +70,7 @@ export default function Dashboard() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6">
                 <StatCard
                     title="Ventas Totales"
-                    value={`$${stats.totalSales.toFixed(2)}`}
+                    value={`S/. ${stats.totalSales.toFixed(2)}`}
                     icon={DollarSign}
                 />
                 <StatCard

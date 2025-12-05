@@ -189,8 +189,8 @@ export default function Inventory() {
                                         {product.description && <div className="text-xs text-text-muted truncate max-w-[200px]">{product.description}</div>}
                                     </td>
                                     <td className="px-6 py-4 text-sm text-text-secondary">{product.category_name || '-'}</td>
-                                    <td className="px-6 py-4 text-sm font-medium text-text-main dark:text-gray-100">${Number(product.price).toFixed(2)}</td>
-                                    <td className="px-6 py-4 text-sm text-text-secondary">${Number(product.cost || 0).toFixed(2)}</td>
+                                    <td className="px-6 py-4 text-sm font-medium text-text-main dark:text-gray-100">S/. {Number(product.price).toFixed(2)}</td>
+                                    <td className="px-6 py-4 text-sm text-text-secondary">S/. {Number(product.cost || 0).toFixed(2)}</td>
                                     <td className="px-6 py-4">
                                         <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${product.stock <= (product.min_stock || 0)
                                             ? 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400'
@@ -237,11 +237,11 @@ export default function Inventory() {
                         <div className="flex justify-between items-center pt-2 border-t border-border dark:border-border-dark">
                             <div className="flex flex-col">
                                 <span className="text-xs text-text-muted">Precio</span>
-                                <span className="font-semibold text-text-main dark:text-gray-100">${Number(product.price).toFixed(2)}</span>
+                                <span className="font-semibold text-text-main dark:text-gray-100">S/. {Number(product.price).toFixed(2)}</span>
                             </div>
                             <div className="flex flex-col">
                                 <span className="text-xs text-text-muted">Costo</span>
-                                <span className="text-sm text-text-secondary">${Number(product.cost || 0).toFixed(2)}</span>
+                                <span className="text-sm text-text-secondary">S/. {Number(product.cost || 0).toFixed(2)}</span>
                             </div>
                             <div className="flex flex-col items-end">
                                 <span className="text-xs text-text-muted">Stock</span>

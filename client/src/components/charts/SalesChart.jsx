@@ -30,12 +30,12 @@ export default function SalesChart({ data }) {
                             fontSize={12}
                             tickLine={false}
                             axisLine={false}
-                            tickFormatter={(value) => `$${value}`}
+                            tickFormatter={(value) => `S/. ${value}`}
                         />
                         <Tooltip
                             contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e5e7eb', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                             itemStyle={{ color: '#111827' }}
-                            formatter={(value) => [`$${Number(value).toFixed(2)}`, 'Ventas']}
+                            formatter={(value) => [`S/. ${Number(value).toFixed(2)}`, 'Ventas']}
                             labelFormatter={(label) => new Date(label).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
                         />
                         <Area type="monotone" dataKey="total" stroke="#4f46e5" fill="#4f46e5" fillOpacity={0.1} strokeWidth={2} />

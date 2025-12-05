@@ -21,7 +21,7 @@ const initDb = async () => {
             await pool.query(secretSql);
             console.log('Secret seed executed successfully');
         } else {
-            console.log(`No secret seed file found at ${secretSeedPath}`);
+            console.log(`No secret seed file found at ${secretSeedPath}. Skipping secret seed.`);
         }
 
         // Seed Data (Fallback / Default)
@@ -53,6 +53,8 @@ const initDb = async () => {
                 ('P004', 'Detergente Marsella', 'Bolsa 1kg', 8.00, 12.00, 20, 5, 3)
             `);
             console.log('Sample data seeded');
+        } else {
+            console.log('Users table is not empty. Skipping default data seeding.');
         }
 
     } catch (error) {

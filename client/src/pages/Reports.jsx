@@ -8,9 +8,17 @@ import { useAuth } from '../context/AuthContext';
 
 export default function Reports() {
     const { user } = useAuth();
+    const getLocalDate = () => {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
     const [filters, setFilters] = useState({
-        startDate: new Date().toISOString().split('T')[0],
-        endDate: new Date().toISOString().split('T')[0],
+        startDate: getLocalDate(),
+        endDate: getLocalDate(),
         userId: 'all'
     });
     const [reportData, setReportData] = useState(null);
@@ -203,13 +211,13 @@ export default function Reports() {
                         />
                         <StatCard
                             title="Ingresos Generados"
-                            value={`$${Number(reportData.summary.totalRevenue).toFixed(2)}`}
+                            value={`S/. ${Number(reportData.summary.totalRevenue).toFixed(2)}`}
                             icon={DollarSign}
                             colorClass="bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400"
                         />
                         <StatCard
                             title="Ganancia Neta"
-                            value={`$${Number(reportData.summary.totalProfit).toFixed(2)}`}
+                            value={`S/. ${Number(reportData.summary.totalProfit).toFixed(2)}`}
                             subtext={`Margen: ${reportData.summary.totalRevenue > 0 ? ((reportData.summary.totalProfit / reportData.summary.totalRevenue) * 100).toFixed(1) : 0}%`}
                             icon={DollarSign}
                             colorClass="bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400"
@@ -250,10 +258,10 @@ export default function Reports() {
                                                     {sale.seller_name}
                                                 </td>
                                                 <td className="px-6 py-4 text-sm font-medium text-text-main text-right dark:text-gray-100">
-                                                    ${Number(sale.sale_total).toFixed(2)}
+                                                    S/. {Number(sale.sale_total).toFixed(2)}
                                                 </td>
                                                 <td className="px-6 py-4 text-sm font-medium text-green-600 text-right dark:text-green-400">
-                                                    ${Number(sale.sale_profit).toFixed(2)}
+                                                    S/. {Number(sale.sale_profit).toFixed(2)}
                                                 </td>
                                                 <td className="px-6 py-4 text-center">
                                                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${sale.status === 'cancelled'
@@ -323,13 +331,13 @@ export default function Reports() {
                                     <div>
                                         <p className="text-text-muted">Total Venta</p>
                                         <p className="font-bold text-lg text-primary">
-                                            ${Number(selectedSale.sale_total).toFixed(2)}
+                                            S/. {Number(selectedSale.sale_total).toFixed(2)}
                                         </p>
                                     </div>
                                     <div>
                                         <p className="text-text-muted">Ganancia</p>
                                         <p className="font-bold text-lg text-green-600 dark:text-green-400">
-                                            ${Number(selectedSale.sale_profit).toFixed(2)}
+                                            S/. {Number(selectedSale.sale_profit).toFixed(2)}
                                         </p>
                                     </div>
                                     <div>
@@ -364,9 +372,9 @@ export default function Reports() {
                                                             {item.status === 'cancelled' && <span className="text-xs text-red-500 font-medium">Cancelado</span>}
                                                         </td>
                                                         <td className={`px-4 py-2 text-center text-text-secondary ${item.status === 'cancelled' ? 'line-through opacity-50' : ''}`}>{Number(item.quantity)}</td>
-                                                        <td className={`px-4 py-2 text-right text-text-secondary ${item.status === 'cancelled' ? 'line-through opacity-50' : ''}`}>${Number(item.price).toFixed(2)}</td>
+                                                        <td className={`px-4 py-2 text-right text-text-secondary ${item.status === 'cancelled' ? 'line-through opacity-50' : ''}`}>S/. {Number(item.price).toFixed(2)}</td>
                                                         <td className={`px-4 py-2 text-right font-medium text-text-main dark:text-gray-100 ${item.status === 'cancelled' ? 'line-through opacity-50' : ''}`}>
-                                                            ${Number(item.subtotal).toFixed(2)}
+                                                            S/. {Number(item.subtotal).toFixed(2)}
                                                         </td>
                                                         <td className="px-4 py-2 text-center">
                                                             {user?.role === 'admin' && selectedSale.status !== 'cancelled' && item.status !== 'cancelled' && (

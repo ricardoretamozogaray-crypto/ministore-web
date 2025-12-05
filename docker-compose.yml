@@ -44,6 +44,8 @@ services:
     restart: always
     ports:
       - "80:80"
+    environment:
+      - TZ=America/Lima
     depends_on:
       - server
     networks:

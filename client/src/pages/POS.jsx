@@ -254,7 +254,7 @@ export default function POS() {
                                     <h3 className="font-medium text-sm text-text-main truncate dark:text-gray-100 leading-tight">{product.name}</h3>
                                     <p className="text-xs text-text-muted mt-1">{formatStock(product.stock, product.unit_type)} disp.</p>
                                 </div>
-                                <div className="font-semibold text-primary text-base lg:text-lg">${Number(product.price).toFixed(2)}</div>
+                                <div className="font-semibold text-primary text-base lg:text-lg">S/. {Number(product.price).toFixed(2)}</div>
                             </button>
                         ))}
                     </div>
@@ -266,7 +266,7 @@ export default function POS() {
                 <div className="flex items-center justify-between mb-3">
                     <div className="flex flex-col">
                         <span className="text-xs text-text-muted">{totalItems} items</span>
-                        <span className="text-xl font-bold text-text-main dark:text-gray-100">${total.toFixed(2)}</span>
+                        <span className="text-xl font-bold text-text-main dark:text-gray-100">S/. {total.toFixed(2)}</span>
                     </div>
                     <button
                         onClick={() => setIsMobileCartOpen(true)}
@@ -323,7 +323,7 @@ export default function POS() {
                                     <div className="flex-1 min-w-0 cursor-pointer" onClick={() => handlePriceEdit(item, 'unit')}>
                                         <h4 className="font-medium text-sm text-text-main truncate dark:text-gray-100">{item.name}</h4>
                                         <p className="text-xs text-text-muted hover:text-primary transition-colors">
-                                            ${Number(item.price).toFixed(2)} x {item.quantity} {item.unit_type === 'kg' ? 'kg' : 'un'}
+                                            S/. {Number(item.price).toFixed(2)} x {item.quantity} {item.unit_type === 'kg' ? 'kg' : 'un'}
                                         </p>
                                     </div>
                                     <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5 dark:bg-gray-800">
@@ -348,7 +348,7 @@ export default function POS() {
                                     </div>
                                     <div className="flex-1 min-w-0 cursor-pointer" onClick={() => handlePriceEdit(item, 'total')}>
                                         <div className="font-medium text-text-main text-sm w-16 text-right dark:text-gray-100">
-                                            ${(item.price * item.quantity).toFixed(2)}
+                                            S/. {(item.price * item.quantity).toFixed(2)}
                                         </div>
                                     </div>
                                     <button
@@ -365,7 +365,7 @@ export default function POS() {
                     <div className="p-4 bg-gray-50 border-t border-border space-y-4 dark:bg-gray-800/50 dark:border-border-dark shrink-0 pb-8 lg:pb-4">
                         <div className="flex justify-between items-center text-xl font-bold text-text-main dark:text-gray-100">
                             <span>Total</span>
-                            <span>${total.toFixed(2)}</span>
+                            <span>S/. {total.toFixed(2)}</span>
                         </div>
 
                         <div className="grid grid-cols-2 gap-3">
@@ -401,7 +401,7 @@ export default function POS() {
 
                         <div className="mb-4">
                             <p className="text-sm text-text-muted mb-2">Producto: <span className="font-medium text-text-main dark:text-gray-100">{editingItem.name}</span></p>
-                            <p className="text-sm text-text-muted">Precio Actual: ${Number(editingItem.price).toFixed(2)}</p>
+                            <p className="text-sm text-text-muted">Precio Actual: S/. {Number(editingItem.price).toFixed(2)}</p>
                             <p className="text-sm text-text-muted">Cantidad: {editingItem.quantity}</p>
                         </div>
 
@@ -494,7 +494,7 @@ export default function POS() {
                         <form onSubmit={handleQuantitySubmit} className="space-y-4">
                             <div>
                                 <p className="text-sm text-text-muted mb-2">Producto: <span className="font-medium text-text-main dark:text-gray-100">{selectedProductForQty.name}</span></p>
-                                <p className="text-sm text-text-muted">Precio: ${Number(selectedProductForQty.price).toFixed(2)} / kg</p>
+                                <p className="text-sm text-text-muted">Precio: S/. {Number(selectedProductForQty.price).toFixed(2)} / kg</p>
                             </div>
 
                             <div className="flex bg-gray-100 p-1 rounded-lg dark:bg-gray-800">

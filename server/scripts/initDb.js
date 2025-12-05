@@ -1,20 +1,13 @@
-const fs = require('fs');
-const path = require('path');
-const { pool } = require('../config/db');
+const initDb = require('../initDb');
 
-const initDb = async () => {
-    try {
-        const schemaPath = path.join(__dirname, '../../database/schema.sql');
-        const schemaSql = fs.readFileSync(schemaPath, 'utf8');
+console.log('Starting manual database initialization...');
 
-        console.log('Running schema.sql...');
-        await pool.query(schemaSql);
-        console.log('Database initialized successfully.');
+initDb()
+    .then(() => {
+        console.log('Manual initialization completed successfully.');
         process.exit(0);
-    } catch (err) {
-        console.error('Error initializing database:', err);
+    })
+    .catch((err) => {
+        console.error('Manual initialization failed:', err);
         process.exit(1);
-    }
-};
-
-initDb();
+    });
