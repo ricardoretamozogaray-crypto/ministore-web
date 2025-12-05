@@ -14,6 +14,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - store_network
 
@@ -22,7 +23,7 @@ services:
     container_name: store_server
     restart: always
     ports:
-      - "3000:3000"
+      - "3001:3000"
     environment:
       - PORT=3000
       - DB_HOST=postgres

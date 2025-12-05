@@ -17,7 +17,13 @@ export default function POS() {
     // Price Editing State
     const [editingItem, setEditingItem] = useState(null);
     const [editValue, setEditValue] = useState('');
-    const [editMode, setEditMode] = useState('unit'); // 'unit' or 'total'
+    const [editMode, setEditMode] = useState('unit'); // 'unit', 'total', or 'quantity'
+
+    // Weight Selection Modal State
+    const [quantityModalOpen, setQuantityModalOpen] = useState(false);
+    const [selectedProductForQty, setSelectedProductForQty] = useState(null);
+    const [qtyInput, setQtyInput] = useState('');
+    const [qtyUnit, setQtyUnit] = useState('kg'); // 'kg' or 'g'
 
     useEffect(() => {
         const fetchData = async () => {
@@ -35,9 +41,27 @@ export default function POS() {
             }
         };
         fetchData();
+        fetchData();
     }, []);
 
+    const formatStock = (stock, unitType) => {
+        const numStock = Number(stock);
+        if (unitType === 'unit' || unitType === 'pack') {
+            return Math.floor(numStock);
+        }
+        // For weight/length, show decimals only if needed
+        return parseFloat(numStock.toFixed(3));
+    };
+
     const addToCart = (product) => {
+        if (product.unit_type === 'kg') {
+            setSelectedProductForQty(product);
+            setQtyInput('');
+            setQtyUnit('kg');
+            setQuantityModalOpen(true);
+            return;
+        }
+
         setCart(prev => {
             const existing = prev.find(item => item.id === product.id);
             if (existing) {
@@ -47,15 +71,47 @@ export default function POS() {
                         : item
                 );
             }
+            // Default quantity 1 for unit, 1 for kg (can be edited)
             return [...prev, { ...product, quantity: 1 }];
         });
+    };
+
+    const handleQuantitySubmit = (e) => {
+        e.preventDefault();
+        if (!qtyInput || isNaN(qtyInput) || Number(qtyInput) <= 0) {
+            alert('Ingrese una cantidad válida');
+            return;
+        }
+
+        let quantity = Number(qtyInput);
+        if (qtyUnit === 'g') {
+            quantity = quantity / 1000;
+        }
+
+        setCart(prev => {
+            const existing = prev.find(item => item.id === selectedProductForQty.id);
+            if (existing) {
+                return prev.map(item =>
+                    item.id === selectedProductForQty.id
+                        ? { ...item, quantity: Number((item.quantity + quantity).toFixed(3)) }
+                        : item
+                );
+            }
+            return [...prev, { ...selectedProductForQty, quantity: Number(quantity.toFixed(3)) }];
+        });
+
+        setQuantityModalOpen(false);
+        setSelectedProductForQty(null);
+        setQtyInput('');
     };
 
     const updateQuantity = (id, delta) => {
         setCart(prev => prev.map(item => {
             if (item.id === id) {
+                // If unit_type is kg, allow smaller increments if needed, but for +/- buttons keep 1 or 0.1?
+                // Let's keep 1 for buttons, but allow manual edit.
                 const newQty = Math.max(0, item.quantity + delta);
-                return { ...item, quantity: newQty };
+                return { ...item, quantity: Number(newQty.toFixed(3)) };
             }
             return item;
         }).filter(item => item.quantity > 0));
@@ -68,7 +124,13 @@ export default function POS() {
     const handlePriceEdit = (item, mode) => {
         setEditingItem(item);
         setEditMode(mode);
-        setEditValue(item.price.toString());
+        if (mode === 'total') {
+            setEditValue((item.price * item.quantity).toFixed(2));
+        } else if (mode === 'quantity') {
+            setEditValue(item.quantity.toString());
+        } else {
+            setEditValue(item.price.toString());
+        }
     };
 
     const applyPriceChange = () => {
@@ -87,6 +149,14 @@ export default function POS() {
             newUnitPrice = value;
         } else if (editMode === 'total') {
             newUnitPrice = value / editingItem.quantity;
+        } else if (editMode === 'quantity') {
+            const newQty = value;
+            setCart(prev => prev.map(item =>
+                item.id === editingItem.id ? { ...item, quantity: newQty } : item
+            ));
+            setEditingItem(null);
+            setEditValue('');
+            return;
         }
 
         setCart(prev => prev.map(item =>
@@ -182,7 +252,7 @@ export default function POS() {
                                 </div>
                                 <div className="flex-1 min-w-0 w-full">
                                     <h3 className="font-medium text-sm text-text-main truncate dark:text-gray-100 leading-tight">{product.name}</h3>
-                                    <p className="text-xs text-text-muted mt-1">{product.stock} disp.</p>
+                                    <p className="text-xs text-text-muted mt-1">{formatStock(product.stock, product.unit_type)} disp.</p>
                                 </div>
                                 <div className="font-semibold text-primary text-base lg:text-lg">${Number(product.price).toFixed(2)}</div>
                             </button>
@@ -253,7 +323,7 @@ export default function POS() {
                                     <div className="flex-1 min-w-0 cursor-pointer" onClick={() => handlePriceEdit(item, 'unit')}>
                                         <h4 className="font-medium text-sm text-text-main truncate dark:text-gray-100">{item.name}</h4>
                                         <p className="text-xs text-text-muted hover:text-primary transition-colors">
-                                            ${Number(item.price).toFixed(2)} x {item.quantity}
+                                            ${Number(item.price).toFixed(2)} x {item.quantity} {item.unit_type === 'kg' ? 'kg' : 'un'}
                                         </p>
                                     </div>
                                     <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5 dark:bg-gray-800">
@@ -263,7 +333,12 @@ export default function POS() {
                                         >
                                             <Minus className="w-3 h-3" />
                                         </button>
-                                        <span className="w-8 text-center text-sm font-medium text-text-main dark:text-gray-100">{item.quantity}</span>
+                                        <span
+                                            className="w-12 text-center text-sm font-medium text-text-main dark:text-gray-100 cursor-pointer hover:text-primary"
+                                            onClick={() => handlePriceEdit(item, 'quantity')}
+                                        >
+                                            {item.quantity}
+                                        </span>
                                         <button
                                             onClick={() => updateQuantity(item.id, 1)}
                                             className="p-2 hover:bg-white rounded-md text-text-secondary shadow-sm transition-all dark:hover:bg-gray-700"
@@ -360,15 +435,29 @@ export default function POS() {
                                 >
                                     Total
                                 </button>
+                                <button
+                                    className={clsx(
+                                        "flex-1 py-1.5 text-sm font-medium rounded-md transition-all",
+                                        editMode === 'quantity'
+                                            ? "bg-white text-primary shadow-sm dark:bg-gray-700 dark:text-white"
+                                            : "text-text-muted hover:text-text-main"
+                                    )}
+                                    onClick={() => {
+                                        setEditMode('quantity');
+                                        setEditValue(editingItem.quantity.toString());
+                                    }}
+                                >
+                                    Cantidad
+                                </button>
                             </div>
 
                             <div>
                                 <label className="block text-sm font-medium text-text-main mb-1 dark:text-gray-200">
-                                    {editMode === 'unit' ? 'Nuevo Precio Unitario' : 'Nuevo Total'}
+                                    {editMode === 'unit' ? 'Nuevo Precio Unitario' : editMode === 'total' ? 'Nuevo Total' : 'Nueva Cantidad'}
                                 </label>
                                 <input
                                     type="number"
-                                    step="0.01"
+                                    step={editMode === 'quantity' && editingItem.unit_type === 'kg' ? "0.001" : "0.01"}
                                     placeholder="0.00"
                                     className="w-full px-3 py-2 bg-white border border-border rounded-md text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary dark:bg-gray-800 dark:border-border-dark dark:text-gray-100"
                                     value={editValue}
@@ -387,6 +476,78 @@ export default function POS() {
                                 </Button>
                             </div>
                         </div>
+                    </Card>
+                </div>
+            )}
+
+            {/* Weight Selection Modal */}
+            {quantityModalOpen && selectedProductForQty && (
+                <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center backdrop-blur-sm p-4">
+                    <Card className="w-full max-w-sm bg-surface p-6 rounded-xl shadow-2xl dark:bg-surface-dark dark:border-border-dark">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-lg font-bold text-text-main dark:text-gray-100">Ingresar Cantidad</h3>
+                            <button onClick={() => setQuantityModalOpen(false)} className="text-text-muted hover:text-text-main">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleQuantitySubmit} className="space-y-4">
+                            <div>
+                                <p className="text-sm text-text-muted mb-2">Producto: <span className="font-medium text-text-main dark:text-gray-100">{selectedProductForQty.name}</span></p>
+                                <p className="text-sm text-text-muted">Precio: ${Number(selectedProductForQty.price).toFixed(2)} / kg</p>
+                            </div>
+
+                            <div className="flex bg-gray-100 p-1 rounded-lg dark:bg-gray-800">
+                                <button
+                                    type="button"
+                                    className={clsx(
+                                        "flex-1 py-1.5 text-sm font-medium rounded-md transition-all",
+                                        qtyUnit === 'kg'
+                                            ? "bg-white text-primary shadow-sm dark:bg-gray-700 dark:text-white"
+                                            : "text-text-muted hover:text-text-main"
+                                    )}
+                                    onClick={() => setQtyUnit('kg')}
+                                >
+                                    Kilogramos (kg)
+                                </button>
+                                <button
+                                    type="button"
+                                    className={clsx(
+                                        "flex-1 py-1.5 text-sm font-medium rounded-md transition-all",
+                                        qtyUnit === 'g'
+                                            ? "bg-white text-primary shadow-sm dark:bg-gray-700 dark:text-white"
+                                            : "text-text-muted hover:text-text-main"
+                                    )}
+                                    onClick={() => setQtyUnit('g')}
+                                >
+                                    Gramos (g)
+                                </button>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-text-main mb-1 dark:text-gray-200">
+                                    Cantidad en {qtyUnit === 'kg' ? 'Kilogramos' : 'Gramos'}
+                                </label>
+                                <input
+                                    type="number"
+                                    step={qtyUnit === 'kg' ? "0.001" : "1"}
+                                    placeholder={qtyUnit === 'kg' ? "0.500" : "500"}
+                                    className="w-full px-3 py-2 bg-white border border-border rounded-md text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary dark:bg-gray-800 dark:border-border-dark dark:text-gray-100"
+                                    value={qtyInput}
+                                    onChange={(e) => setQtyInput(e.target.value)}
+                                    autoFocus
+                                />
+                            </div>
+
+                            <div className="flex gap-3 justify-end pt-2">
+                                <Button type="button" variant="secondary" onClick={() => setQuantityModalOpen(false)}>
+                                    Cancelar
+                                </Button>
+                                <Button type="submit">
+                                    Agregar
+                                </Button>
+                            </div>
+                        </form>
                     </Card>
                 </div>
             )}

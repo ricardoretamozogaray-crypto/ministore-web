@@ -3,9 +3,11 @@ import api from '../utils/api';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
-import { DollarSign, TrendingUp, Calendar, User, Search, ChevronDown, Eye } from 'lucide-react';
+import { DollarSign, TrendingUp, Calendar, User, Search, ChevronDown, Eye, XCircle, RotateCcw } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 export default function Reports() {
+    const { user } = useAuth();
     const [filters, setFilters] = useState({
         startDate: new Date().toISOString().split('T')[0],
         endDate: new Date().toISOString().split('T')[0],
@@ -35,11 +37,86 @@ export default function Reports() {
             const query = new URLSearchParams(filters).toString();
             const res = await api.get(`/reports/sales?${query}`);
             setReportData(res.data);
+            return res.data;
         } catch (error) {
             console.error('Error generating report:', error);
             alert('Error al generar el reporte');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleCancelSale = async (saleId) => {
+        if (!window.confirm('¿Estás seguro de cancelar esta venta? Esta acción restaurará el stock.')) return;
+
+        try {
+            await api.post(`/sales/${saleId}/cancel`);
+            alert('Venta cancelada exitosamente');
+            generateReport();
+            setSelectedSale(null);
+        } catch (error) {
+            console.error('Error cancelling sale:', error);
+            alert('Error al cancelar venta: ' + (error.response?.data?.message || error.message));
+        }
+    };
+
+    const handleCancelItem = async (saleId, itemId) => {
+        if (!window.confirm('¿Seguro que desea cancelar este producto? Se restaurará el stock.')) return;
+
+        try {
+            await api.post(`/sales/${saleId}/items/${itemId}/cancel`);
+            alert('Producto cancelado exitosamente');
+            const newData = await generateReport();
+
+            if (newData && newData.sales) {
+                const updatedSale = newData.sales.find(s => s.sale_id === saleId);
+                if (updatedSale) {
+                    if (updatedSale.status === 'cancelled') {
+                        setSelectedSale(null); // Close if sale is fully cancelled
+                    } else {
+                        setSelectedSale(updatedSale); // Update modal with new data
+                    }
+                } else {
+                    setSelectedSale(null);
+                }
+            }
+        } catch (error) {
+            console.error('Error cancelling item:', error);
+            alert('Error al cancelar producto: ' + (error.response?.data?.message || error.message));
+        }
+    };
+
+    const handleRestoreSale = async (saleId) => {
+        if (!window.confirm('¿Seguro que desea restaurar esta venta? Se descontará el stock nuevamente.')) return;
+
+        try {
+            await api.post(`/sales/${saleId}/restore`);
+            alert('Venta restaurada exitosamente');
+            generateReport();
+            setSelectedSale(null);
+        } catch (error) {
+            console.error('Error restoring sale:', error);
+            alert('Error al restaurar venta: ' + (error.response?.data?.message || error.message));
+        }
+    };
+
+    const handleRestoreItem = async (saleId, itemId) => {
+        if (!window.confirm('¿Seguro que desea restaurar este producto? Se descontará el stock.')) return;
+
+        try {
+            await api.post(`/sales/${saleId}/items/${itemId}/restore`);
+            alert('Producto restaurado exitosamente');
+            const newData = await generateReport();
+
+            if (newData && newData.sales) {
+                const updatedSale = newData.sales.find(s => s.sale_id === saleId);
+                if (updatedSale) {
+                    setSelectedSale(updatedSale);
+                }
+            }
+        } catch (error) {
+            console.error('Error restoring item:', error);
+            alert('Error al restaurar producto: ' + (error.response?.data?.message || error.message));
         }
     };
 
@@ -152,7 +229,8 @@ export default function Reports() {
                                         <th className="px-6 py-3 text-xs font-medium text-text-secondary uppercase tracking-wider">Vendedor</th>
                                         <th className="px-6 py-3 text-xs font-medium text-text-secondary uppercase tracking-wider text-right">Total</th>
                                         <th className="px-6 py-3 text-xs font-medium text-text-secondary uppercase tracking-wider text-right">Ganancia</th>
-                                        <th className="px-6 py-3 text-xs font-medium text-text-secondary uppercase tracking-wider text-center">Detalles</th>
+                                        <th className="px-6 py-3 text-xs font-medium text-text-secondary uppercase tracking-wider text-center">Estado</th>
+                                        <th className="px-6 py-3 text-xs font-medium text-text-secondary uppercase tracking-wider text-center">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-border dark:divide-border-dark">
@@ -177,7 +255,15 @@ export default function Reports() {
                                                 <td className="px-6 py-4 text-sm font-medium text-green-600 text-right dark:text-green-400">
                                                     ${Number(sale.sale_profit).toFixed(2)}
                                                 </td>
-                                                <td className="px-6 py-4 text-sm text-center">
+                                                <td className="px-6 py-4 text-center">
+                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${sale.status === 'cancelled'
+                                                        ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
+                                                        : 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
+                                                        }`}>
+                                                        {sale.status === 'cancelled' ? 'Cancelado' : 'Completado'}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 text-sm text-center space-x-2">
                                                     <button
                                                         onClick={() => setSelectedSale(sale)}
                                                         className="inline-flex items-center justify-center p-2 text-primary hover:bg-primary/10 rounded-full transition-colors"
@@ -185,6 +271,24 @@ export default function Reports() {
                                                     >
                                                         <Eye className="w-5 h-5" />
                                                     </button>
+                                                    {user?.role === 'admin' && sale.status !== 'cancelled' && (
+                                                        <button
+                                                            onClick={() => handleCancelSale(sale.sale_id)}
+                                                            className="inline-flex items-center justify-center p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors dark:hover:bg-red-900/20"
+                                                            title="Cancelar Venta"
+                                                        >
+                                                            <XCircle className="w-5 h-5" />
+                                                        </button>
+                                                    )}
+                                                    {user?.role === 'admin' && sale.status === 'cancelled' && (
+                                                        <button
+                                                            onClick={() => handleRestoreSale(sale.sale_id)}
+                                                            className="inline-flex items-center justify-center p-2 text-blue-500 hover:bg-blue-50 rounded-full transition-colors dark:hover:bg-blue-900/20"
+                                                            title="Restaurar Venta"
+                                                        >
+                                                            <RotateCcw className="w-5 h-5" />
+                                                        </button>
+                                                    )}
                                                 </td>
                                             </tr>
                                         ))
@@ -228,6 +332,12 @@ export default function Reports() {
                                             ${Number(selectedSale.sale_profit).toFixed(2)}
                                         </p>
                                     </div>
+                                    <div>
+                                        <p className="text-text-muted">Estado</p>
+                                        <p className={`font-bold text-lg ${selectedSale.status === 'cancelled' ? 'text-red-600' : 'text-green-600'}`}>
+                                            {selectedSale.status === 'cancelled' ? 'Cancelado' : 'Completado'}
+                                        </p>
+                                    </div>
                                 </div>
 
                                 {/* Products Table */}
@@ -241,16 +351,42 @@ export default function Reports() {
                                                     <th className="px-4 py-2 font-medium text-text-secondary text-center">Cant.</th>
                                                     <th className="px-4 py-2 font-medium text-text-secondary text-right">Precio</th>
                                                     <th className="px-4 py-2 font-medium text-text-secondary text-right">Subtotal</th>
+                                                    <th className="px-4 py-2 font-medium text-text-secondary text-center">Acciones</th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-border dark:divide-border-dark">
                                                 {selectedSale.items.map((item, idx) => (
-                                                    <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                                                        <td className="px-4 py-2 text-text-main dark:text-gray-100">{item.product_name}</td>
-                                                        <td className="px-4 py-2 text-center text-text-secondary">{item.quantity}</td>
-                                                        <td className="px-4 py-2 text-right text-text-secondary">${Number(item.price).toFixed(2)}</td>
-                                                        <td className="px-4 py-2 text-right font-medium text-text-main dark:text-gray-100">
+                                                    <tr key={idx} className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 ${item.status === 'cancelled' ? 'bg-red-50 dark:bg-red-900/10' : ''}`}>
+                                                        <td className="px-4 py-2 text-text-main dark:text-gray-100">
+                                                            <div className={item.status === 'cancelled' ? 'line-through text-text-muted' : ''}>
+                                                                {item.product_name}
+                                                            </div>
+                                                            {item.status === 'cancelled' && <span className="text-xs text-red-500 font-medium">Cancelado</span>}
+                                                        </td>
+                                                        <td className={`px-4 py-2 text-center text-text-secondary ${item.status === 'cancelled' ? 'line-through opacity-50' : ''}`}>{Number(item.quantity)}</td>
+                                                        <td className={`px-4 py-2 text-right text-text-secondary ${item.status === 'cancelled' ? 'line-through opacity-50' : ''}`}>${Number(item.price).toFixed(2)}</td>
+                                                        <td className={`px-4 py-2 text-right font-medium text-text-main dark:text-gray-100 ${item.status === 'cancelled' ? 'line-through opacity-50' : ''}`}>
                                                             ${Number(item.subtotal).toFixed(2)}
+                                                        </td>
+                                                        <td className="px-4 py-2 text-center">
+                                                            {user?.role === 'admin' && selectedSale.status !== 'cancelled' && item.status !== 'cancelled' && (
+                                                                <button
+                                                                    onClick={() => handleCancelItem(selectedSale.sale_id, item.id)}
+                                                                    className="text-red-500 hover:bg-red-100 p-1.5 rounded-full transition-colors dark:hover:bg-red-900/20"
+                                                                    title="Cancelar Producto"
+                                                                >
+                                                                    <XCircle className="w-4 h-4" />
+                                                                </button>
+                                                            )}
+                                                            {user?.role === 'admin' && item.status === 'cancelled' && (
+                                                                <button
+                                                                    onClick={() => handleRestoreItem(selectedSale.sale_id, item.id)}
+                                                                    className="text-blue-500 hover:bg-blue-100 p-1.5 rounded-full transition-colors dark:hover:bg-blue-900/20"
+                                                                    title="Restaurar Producto"
+                                                                >
+                                                                    <RotateCcw className="w-4 h-4" />
+                                                                </button>
+                                                            )}
                                                         </td>
                                                     </tr>
                                                 ))}

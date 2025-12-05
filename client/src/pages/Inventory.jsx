@@ -14,7 +14,7 @@ export default function Inventory() {
     const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
     const [editingProduct, setEditingProduct] = useState(null);
     const [formData, setFormData] = useState({
-        name: '', description: '', price: '', cost: '', stock: '', min_stock: '', category_id: '', image_url: ''
+        name: '', description: '', price: '', cost: '', stock: '', min_stock: '', category_id: '', image_url: '', unit_type: 'unit'
     });
     const [showLowStock, setShowLowStock] = useState(false);
     const [bulkData, setBulkData] = useState('');
@@ -58,7 +58,7 @@ export default function Inventory() {
             setIsModalOpen(false);
             setEditingProduct(null);
             setEditingProduct(null);
-            setFormData({ name: '', description: '', price: '', cost: '', stock: '', min_stock: '', category_id: '', image_url: '' });
+            setFormData({ name: '', description: '', price: '', cost: '', stock: '', min_stock: '', category_id: '', image_url: '', unit_type: 'unit' });
             fetchData();
         } catch (error) {
             alert('Error: ' + error.response?.data?.message);
@@ -70,9 +70,9 @@ export default function Inventory() {
         try {
             const lines = bulkData.trim().split('\n');
             const productsToCreate = lines.map(line => {
-                // Format: name,price,cost,stock,min_stock,category_id
-                const [name, price, cost, stock, min_stock, category_id] = line.split(',');
-                return { name, price, cost, stock, min_stock: min_stock || 0, category_id };
+                // Format: name,price,cost,stock,min_stock,category_id,unit_type
+                const [name, price, cost, stock, min_stock, category_id, unit_type] = line.split(',');
+                return { name, price, cost, stock, min_stock: min_stock || 0, category_id, unit_type: unit_type || 'unit' };
             });
 
             for (const p of productsToCreate) {
@@ -110,12 +110,13 @@ export default function Inventory() {
                 stock: product.stock,
                 min_stock: product.min_stock || 0,
                 category_id: product.category_id || '',
-                image_url: product.image_url || ''
+                image_url: product.image_url || '',
+                unit_type: product.unit_type || 'unit'
             });
         } else {
             setEditingProduct(null);
             setEditingProduct(null);
-            setFormData({ name: '', description: '', price: '', cost: '', stock: '', min_stock: '', category_id: '', image_url: '' });
+            setFormData({ name: '', description: '', price: '', cost: '', stock: '', min_stock: '', category_id: '', image_url: '', unit_type: 'unit' });
         }
         setIsModalOpen(true);
     };
@@ -195,7 +196,7 @@ export default function Inventory() {
                                             ? 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400'
                                             : 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400'
                                             }`}>
-                                            {product.stock} un.
+                                            {product.stock} {product.unit_type === 'kg' ? 'kg' : 'un.'}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 text-right space-x-2">
@@ -246,7 +247,7 @@ export default function Inventory() {
                                 <span className="text-xs text-text-muted">Stock</span>
                                 <span className={`text-sm font-medium ${product.stock <= (product.min_stock || 0) ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'
                                     }`}>
-                                    {product.stock} un.
+                                    {product.stock} {product.unit_type === 'kg' ? 'kg' : 'un.'}
                                 </span>
                             </div>
                         </div>
@@ -283,6 +284,20 @@ export default function Inventory() {
                                 ))}
                             </select>
                         </div>
+                        <div>
+                            <label className="block text-xs font-medium text-text-secondary mb-1.5 uppercase tracking-wide dark:text-gray-400">Tipo Unidad</label>
+                            <select
+                                className="w-full px-3 py-3 lg:py-2 bg-white border border-border rounded-md text-sm text-text-main transition-colors focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary dark:bg-surface-dark dark:border-border-dark dark:text-gray-100"
+                                value={formData.unit_type}
+                                onChange={(e) => setFormData({ ...formData, unit_type: e.target.value })}
+                            >
+                                <option value="unit">Unidad</option>
+                                <option value="kg">Kilogramo (kg)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <Input
                             label="Precio Venta"
                             type="number"
@@ -308,6 +323,7 @@ export default function Inventory() {
                                 <label className="block text-xs font-medium text-text-secondary mb-1.5 uppercase tracking-wide dark:text-gray-400">Stock</label>
                                 <input
                                     type="number"
+                                    step={formData.unit_type === 'kg' ? "0.001" : "1"}
                                     className="w-full px-3 py-3 lg:py-2 bg-white border border-border rounded-md text-sm text-text-main transition-colors focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary dark:bg-surface-dark dark:border-border-dark dark:text-gray-100"
                                     value={formData.stock}
                                     onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
@@ -319,6 +335,7 @@ export default function Inventory() {
                                 <label className="block text-xs font-medium text-text-secondary mb-1.5 uppercase tracking-wide dark:text-gray-400">Min. Stock</label>
                                 <input
                                     type="number"
+                                    step={formData.unit_type === 'kg' ? "0.001" : "1"}
                                     className="w-full px-3 py-3 lg:py-2 bg-white border border-border rounded-md text-sm text-text-main transition-colors focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary dark:bg-surface-dark dark:border-border-dark dark:text-gray-100"
                                     value={formData.min_stock}
                                     onChange={(e) => setFormData({ ...formData, min_stock: e.target.value })}
@@ -366,14 +383,14 @@ export default function Inventory() {
                 <form onSubmit={handleBulkSubmit} className="space-y-4">
                     <p className="text-sm text-text-secondary dark:text-gray-400">
                         Ingresa los productos en formato CSV (uno por línea):<br />
-                        <code>nombre,precio,costo,stock,id_categoria</code>
+                        <code>nombre,precio,costo,stock,min_stock,id_categoria,tipo_unidad(opcional)</code>
                     </p>
                     <textarea
                         className="w-full px-3 py-2 bg-white border border-border rounded-md text-sm font-mono text-text-main transition-colors focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary dark:bg-surface-dark dark:border-border-dark dark:text-gray-100"
                         rows="10"
                         value={bulkData}
                         onChange={(e) => setBulkData(e.target.value)}
-                        placeholder="Coca Cola,2.50,1.50,100,10,1&#10;Pepsi,2.40,1.40,50,5,1"
+                        placeholder="Coca Cola,2.50,1.50,100,10,1,unit&#10;Manzanas,5.00,3.00,20.5,2,2,kg"
                         required
                     />
                     <div className="pt-4 flex gap-3 justify-end">

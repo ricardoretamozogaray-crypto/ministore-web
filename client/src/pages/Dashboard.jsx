@@ -4,6 +4,8 @@ import { Modal } from '../components/ui/Modal';
 import { Button } from '../components/ui/Button';
 import { DollarSign, Package, ShoppingBag, TrendingUp, ArrowUpRight, AlertTriangle } from 'lucide-react';
 import { Card } from '../components/ui/Card';
+import SalesChart from '../components/charts/SalesChart';
+import TopProductsChart from '../components/charts/TopProductsChart';
 
 export default function Dashboard() {
     const [stats, setStats] = useState({
@@ -13,16 +15,22 @@ export default function Dashboard() {
     });
     const [lowStockProducts, setLowStockProducts] = useState([]);
     const [showLowStockModal, setShowLowStockModal] = useState(false);
+    const [salesData, setSalesData] = useState([]);
+    const [topProductsData, setTopProductsData] = useState([]);
 
     useEffect(() => {
         const fetchStats = async () => {
             try {
-                const [statsRes, lowStockRes] = await Promise.all([
+                const [statsRes, lowStockRes, salesRes, topProductsRes] = await Promise.all([
                     api.get('/reports/stats'),
-                    api.get('/products/low-stock')
+                    api.get('/products/low-stock'),
+                    api.get('/reports/sales-by-date'),
+                    api.get('/reports/top-products')
                 ]);
                 setStats(statsRes.data);
                 setLowStockProducts(lowStockRes.data);
+                setSalesData(salesRes.data);
+                setTopProductsData(topProductsRes.data);
 
                 // Show modal only if it hasn't been shown in this session and there are low stock products
                 const hasShownAlert = sessionStorage.getItem('hasShownLowStockAlert');
@@ -78,18 +86,12 @@ export default function Dashboard() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-                <Card className="h-64 lg:h-96 flex items-center justify-center text-text-muted">
-                    <div className="text-center">
-                        <TrendingUp className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                        <p>Gráfico de Ventas (Ver Reportes)</p>
-                    </div>
-                </Card>
-                <Card className="h-64 lg:h-96 flex items-center justify-center text-text-muted">
-                    <div className="text-center">
-                        <Package className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                        <p>Top Productos (Ver Reportes)</p>
-                    </div>
-                </Card>
+                <div className="h-80">
+                    <SalesChart data={salesData} />
+                </div>
+                <div className="h-80">
+                    <TopProductsChart data={topProductsData} />
+                </div>
             </div>
 
             <Modal

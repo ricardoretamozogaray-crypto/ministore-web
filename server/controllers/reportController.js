@@ -2,8 +2,8 @@ const { query } = require('../config/db');
 
 const getDashboardStats = async (req, res) => {
     try {
-        const salesRes = await query('SELECT SUM(total) as total_sales FROM sales');
-        const ordersRes = await query('SELECT COUNT(*) as total_orders FROM sales');
+        const salesRes = await query("SELECT SUM(total) as total_sales FROM sales WHERE status != 'cancelled'");
+        const ordersRes = await query("SELECT COUNT(*) as total_orders FROM sales WHERE status != 'cancelled'");
         const productsRes = await query('SELECT COUNT(*) as total_products FROM products');
         const lowStockRes = await query('SELECT COUNT(*) as low_stock FROM products WHERE stock <= min_stock');
 
@@ -23,7 +23,7 @@ const getSalesByDate = async (req, res) => {
         const result = await query(`
       SELECT DATE(created_at) as date, SUM(total) as total
       FROM sales
-      WHERE created_at >= NOW() - INTERVAL '7 days'
+      WHERE created_at >= NOW() - INTERVAL '7 days' AND status != 'cancelled'
       GROUP BY DATE(created_at)
       ORDER BY date ASC
     `);
@@ -58,14 +58,17 @@ const getSalesReport = async (req, res) => {
         s.id as sale_id,
         s.created_at,
         s.total as sale_total,
+        s.status,
         u.username as seller_name,
         json_agg(json_build_object(
+          'id', si.id,
           'product_name', p.name,
           'quantity', si.quantity,
           'price', si.price,
           'cost', p.cost,
           'subtotal', (si.price * si.quantity),
-          'profit', ((si.price - COALESCE(p.cost, 0)) * si.quantity)
+          'profit', ((si.price - COALESCE(p.cost, 0)) * si.quantity),
+          'status', si.status
         )) as items
       FROM sales s
       JOIN users u ON s.user_id = u.id
@@ -95,19 +98,24 @@ const getSalesReport = async (req, res) => {
             paramCount++;
         }
 
-        queryStr += ` GROUP BY s.id, s.created_at, s.total, u.username ORDER BY s.created_at DESC`;
+        queryStr += ` GROUP BY s.id, s.created_at, s.total, s.status, u.username ORDER BY s.created_at DESC`;
 
         const result = await query(queryStr, params);
 
         // Calculate totals
         let totalRevenue = 0;
         let totalProfit = 0;
-        let totalSales = result.rows.length;
+        let totalSales = result.rows.filter(s => s.status !== 'cancelled').length;
 
         const sales = result.rows.map(sale => {
-            const saleProfit = sale.items.reduce((acc, item) => acc + Number(item.profit), 0);
-            totalRevenue += Number(sale.sale_total);
-            totalProfit += saleProfit;
+            const saleProfit = sale.items.reduce((acc, item) => {
+                return item.status !== 'cancelled' ? acc + Number(item.profit) : acc;
+            }, 0);
+
+            if (sale.status !== 'cancelled') {
+                totalRevenue += Number(sale.sale_total);
+                totalProfit += saleProfit;
+            }
 
             return {
                 ...sale,
