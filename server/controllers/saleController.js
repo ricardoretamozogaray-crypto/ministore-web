@@ -84,9 +84,13 @@ const cancelSale = async (req, res) => {
         const itemsRes = await client.query('SELECT * FROM sale_items WHERE sale_id = $1', [id]);
         const items = itemsRes.rows;
 
-        // Restore Stock
+        // Restore Stock (Only for active items to avoid double restoration)
         for (const item of items) {
-            await client.query('UPDATE products SET stock = stock + $1 WHERE id = $2', [item.quantity, item.product_id]);
+            if (item.status === 'active') {
+                await client.query('UPDATE products SET stock = stock + $1 WHERE id = $2', [Number(item.quantity), item.product_id]);
+                // Mark item as cancelled too so individual status is consistent
+                await client.query('UPDATE sale_items SET status = $1 WHERE id = $2', ['cancelled', item.id]);
+            }
         }
 
         // Update Sale Status

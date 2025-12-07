@@ -7,6 +7,25 @@ import { Card } from '../components/ui/Card';
 import SalesChart from '../components/charts/SalesChart';
 import TopProductsChart from '../components/charts/TopProductsChart';
 
+const StatCard = ({ title, value, icon: Icon, trend }) => (
+    <Card className="p-6 flex flex-col justify-between h-32 hover:shadow-md transition-shadow">
+        <div className="flex justify-between items-start">
+            <div className="p-2 bg-gray-50 rounded-lg dark:bg-gray-800">
+                <Icon className="w-5 h-5 text-text-secondary dark:text-gray-400" />
+            </div>
+            {trend && (
+                <span className="flex items-center text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full dark:bg-green-900/20 dark:text-green-400">
+                    +{trend}% <ArrowUpRight className="w-3 h-3 ml-1" />
+                </span>
+            )}
+        </div>
+        <div>
+            <h3 className="text-2xl font-semibold text-text-main mt-2 dark:text-gray-100">{value}</h3>
+            <p className="text-sm text-text-muted font-medium">{title}</p>
+        </div>
+    </Card>
+);
+
 export default function Dashboard() {
     const [stats, setStats] = useState({
         totalSales: 0,
@@ -32,7 +51,6 @@ export default function Dashboard() {
                 setSalesData(salesRes.data);
                 setTopProductsData(topProductsRes.data);
 
-                // Show modal only if it hasn't been shown in this session and there are low stock products
                 const hasShownAlert = sessionStorage.getItem('hasShownLowStockAlert');
                 if (!hasShownAlert && lowStockRes.data.length > 0) {
                     setShowLowStockModal(true);
@@ -46,31 +64,12 @@ export default function Dashboard() {
         fetchStats();
     }, []);
 
-    const StatCard = ({ title, value, icon: Icon, trend }) => (
-        <Card className="p-6 flex flex-col justify-between h-32 hover:shadow-md transition-shadow">
-            <div className="flex justify-between items-start">
-                <div className="p-2 bg-gray-50 rounded-lg dark:bg-gray-800">
-                    <Icon className="w-5 h-5 text-text-secondary dark:text-gray-400" />
-                </div>
-                {trend && (
-                    <span className="flex items-center text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full dark:bg-green-900/20 dark:text-green-400">
-                        +{trend}% <ArrowUpRight className="w-3 h-3 ml-1" />
-                    </span>
-                )}
-            </div>
-            <div>
-                <h3 className="text-2xl font-semibold text-text-main mt-2 dark:text-gray-100">{value}</h3>
-                <p className="text-sm text-text-muted font-medium">{title}</p>
-            </div>
-        </Card>
-    );
-
     return (
         <div className="space-y-6 lg:space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6">
                 <StatCard
                     title="Ventas Totales"
-                    value={`S/. ${stats.totalSales.toFixed(2)}`}
+                    value={`S/. ${(stats.totalSales || 0).toFixed(2)}`}
                     icon={DollarSign}
                 />
                 <StatCard

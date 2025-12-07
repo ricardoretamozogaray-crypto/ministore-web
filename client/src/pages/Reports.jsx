@@ -6,6 +6,21 @@ import { Modal } from '../components/ui/Modal';
 import { DollarSign, TrendingUp, Calendar, User, Search, ChevronDown, Eye, XCircle, RotateCcw } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
+const StatCard = ({ title, value, subtext, icon: Icon, colorClass }) => (
+    <Card className="p-6 flex flex-col justify-between h-full min-h-[9rem]">
+        <div className="flex justify-between items-start">
+            <div className={`p-2 rounded-lg ${colorClass}`}>
+                <Icon className="w-5 h-5" />
+            </div>
+        </div>
+        <div className="mt-4">
+            <h3 className="text-2xl font-semibold text-text-main dark:text-gray-100">{value}</h3>
+            <p className="text-sm text-text-muted font-medium">{title}</p>
+            {subtext && <p className="text-xs text-green-600 font-medium mt-1 dark:text-green-400">{subtext}</p>}
+        </div>
+    </Card>
+);
+
 export default function Reports() {
     const { user } = useAuth();
     const getLocalDate = () => {
@@ -127,21 +142,6 @@ export default function Reports() {
             alert('Error al restaurar producto: ' + (error.response?.data?.message || error.message));
         }
     };
-
-    const StatCard = ({ title, value, subtext, icon: Icon, colorClass }) => (
-        <Card className="p-6 flex flex-col justify-between h-full min-h-[9rem]">
-            <div className="flex justify-between items-start">
-                <div className={`p-2 rounded-lg ${colorClass}`}>
-                    <Icon className="w-5 h-5" />
-                </div>
-            </div>
-            <div className="mt-4">
-                <h3 className="text-2xl font-semibold text-text-main dark:text-gray-100">{value}</h3>
-                <p className="text-sm text-text-muted font-medium">{title}</p>
-                {subtext && <p className="text-xs text-green-600 font-medium mt-1 dark:text-green-400">{subtext}</p>}
-            </div>
-        </Card>
-    );
 
     return (
         <div className="space-y-6">

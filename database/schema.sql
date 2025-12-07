@@ -48,13 +48,12 @@ CREATE TABLE IF NOT EXISTS sale_items (
     status VARCHAR(20) NOT NULL DEFAULT 'active' -- 'active', 'cancelled'
 );
 
-CREATE TABLE IF NOT EXISTS sale_logs (
-    id SERIAL PRIMARY KEY,
-    sale_id INTEGER REFERENCES sales(id),
-    sale_item_id INTEGER REFERENCES sale_items(id),
-    user_id INTEGER REFERENCES users(id),
-    action VARCHAR(50) NOT NULL, -- 'CANCEL_SALE', 'CANCEL_ITEM', 'RESTORE_SALE', 'RESTORE_ITEM'
-    quantity DECIMAL(10, 3),
-    reason TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+
+
+CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id);
+CREATE INDEX IF NOT EXISTS idx_products_stock ON products(stock);
+CREATE INDEX IF NOT EXISTS idx_products_price ON products(price);
+CREATE INDEX IF NOT EXISTS idx_products_name_code ON products(name, code);
